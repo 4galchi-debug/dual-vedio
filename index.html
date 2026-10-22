@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="apple-mobile-web-app-capable" content="yes"><title>유튜브 동시재생</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#111;color:#fff;font-family:-apple-system,BlinkMacSystemFont,sans-serif}main{padding:18px 12px 30px;max-width:900px;margin:auto}h1{font-size:22px}.hint,.note{color:#aaa;font-size:13px;line-height:1.5}.inputs{display:grid;gap:8px;margin:14px 0}input{width:100%;background:#242424;color:#fff;border:1px solid #555;border-radius:10px;padding:13px;font-size:15px}.players{display:grid;grid-template-columns:1fr 1fr;gap:6px}.screen{aspect-ratio:9/16;background:#000;border-radius:9px;overflow:hidden}.screen iframe{width:100%;height:100%;border:0}.tag{font-size:12px;color:#bbb}.actions{display:flex;gap:7px;margin:12px 0}.actions button{flex:1;background:#eee;color:#111;border:0;border-radius:10px;padding:12px 5px;font-size:13px;font-weight:600}.actions .secondary{background:#333;color:#fff}.status{font-size:13px;color:#bbb;line-height:1.5}@media(min-width:650px){.inputs{grid-template-columns:1fr 1fr}.screen{aspect-ratio:16/9}}
+</style></head><body><main>
+<h1>유튜브 동시재생</h1><p class="hint">유튜브 링크 두 개를 붙여 넣고 불러온 다음 재생해.</p>
+<div class="inputs"><input id="url1" placeholder="유튜브 링크 1 붙여넣기"><input id="url2" placeholder="유튜브 링크 2 붙여넣기"></div>
+<div class="actions"><button id="load">영상 불러오기</button><button id="play" class="secondary">▶ 둘 다 재생</button><button id="pause" class="secondary">⏸ 둘 다 정지</button></div>
+<div class="players"><section><p class="tag">영상 1</p><div class="screen"><div id="p1"></div></div></section><section><p class="tag">영상 2</p><div class="screen"><div id="p2"></div></div></section></div>
+<p id="status" class="status">유튜브 링크를 넣고 ‘영상 불러오기’를 눌러줘.</p><p class="note">유튜브의 삽입 재생이 허용된 영상만 재생돼. 아이폰 Safari 제한 때문에 두 영상이 완벽히 같은 순간에 시작하지 않거나 동시에 재생되지 않을 수도 있어.</p>
+</main><script>
+let players={},apiReady=false;
+function getId(raw){try{const u=new URL(raw.trim());if(u.hostname.includes('youtu.be'))return u.pathname.split('/').filter(Boolean)[0]||null;if(u.hostname.includes('youtube.com')||u.hostname.includes('youtube-nocookie.com')){if(u.searchParams.get('v'))return u.searchParams.get('v');const a=u.pathname.split('/').filter(Boolean);if(['embed','shorts','live'].includes(a[0]))return a[1]||null}}catch(e){}return null}
+window.onYouTubeIframeAPIReady=()=>apiReady=true;const s=document.createElement('script');s.src='https://www.youtube.com/iframe_api';document.head.appendChild(s);
+function waitAPI(){return new Promise((resolve,reject)=>{let n=0;function check(){if(apiReady)resolve();else if(++n>80)reject(Error('유튜브 플레이어를 불러오지 못했어. 인터넷 연결을 확인해줘.'));else setTimeout(check,150)}check()})}
+async function loadPlayers(){const ids=[getId(url1.value),getId(url2.value)];if(ids.some(x=>!x)){status.textContent='유효한 유튜브 링크 두 개를 넣어줘.';return}status.textContent='영상을 불러오는 중…';try{await waitAPI()}catch(e){status.textContent=e.message;return}for(const k of ['p1','p2'])if(players[k]){players[k].destroy();players[k]=null}let ready=0;['p1','p2'].forEach((el,i)=>{players[el]=new YT.Player(el,{videoId:ids[i],playerVars:{playsinline:1,controls:1,rel:0},events:{onReady:()=>{ready++;if(ready===2)status.textContent='두 영상 준비 완료. ‘둘 다 재생’을 눌러줘.'},onError:()=>status.textContent='영상 하나를 재생할 수 없어. 링크 또는 삽입 허용 여부를 확인해줘.'}})})}
+document.getElementById('load').onclick=loadPlayers;
+document.getElementById('play').onclick=()=>{if(!players.p1||!players.p2){status.textContent='먼저 링크 두 개를 넣고 영상 불러오기를 눌러줘.';return}players.p1.playVideo();players.p2.playVideo();status.textContent='재생 요청을 보냈어. Safari 제한으로 동시에 시작되지 않을 수 있어.'};
+document.getElementById('pause').onclick=()=>{if(players.p1)players.p1.pauseVideo();if(players.p2)players.p2.pauseVideo();status.textContent='두 영상에 일시정지 요청을 보냈어.'};
+</script></body></html>
